@@ -1,0 +1,109 @@
+view.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Attendance - Attendance System</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Charts.js for attendance charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="js/auth.js" defer></script>
+    <script src="js/attendance-view.js" defer></script>
+</head>
+<body>
+    <div class="nav-container">
+        <div class="nav-menu">
+            <a href="teacher.html" class="nav-brand">Smart Attendance</a>
+            <div class="nav-links">
+                <a href="teacher.html" class="nav-link">Dashboard</a>
+                <button onclick="firebase.auth().signOut().then(() => window.location.href = 'index.html')" class="logout-btn">Logout</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="app" class="teacher-dashboard">
+        <h1>View Attendance</h1>
+        <h2 id="class-name">Loading class information...</h2>
+        
+        <div id="dashboard">
+            <div class="card fade-in">
+                <div class="card-header">Attendance Statistics</div>
+                <div class="card-body">
+                    <div class="stats-container">
+                        <div class="stat-card">
+                            <div>Present</div>
+                            <div class="stat-number" id="present-count">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div>Absent</div>
+                            <div class="stat-number" id="absent-count">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div>Total Students</div>
+                            <div class="stat-number" id="total-count">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <div>Attendance Rate</div>
+                            <div class="stat-number" id="attendance-rate">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="attendance-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card fade-in">
+                <div class="card-header">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Attendance Records</span>
+                        <div>
+                            <label for="date-filter">Filter by date:</label>
+                            <input type="date" id="date-filter">
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>ID</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Time</th>
+                                <th>Distance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-records">
+                            <tr>
+                                <td colspan="6">Loading attendance records...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="card fade-in">
+                <div class="card-header">Export Options</div>
+                <div class="card-body">
+                    <p>Download attendance records as:</p>
+                    <button class="btn btn-primary" onclick="exportAttendance('csv')">CSV</button>
+                    <button class="btn btn-primary" onclick="exportAttendance('pdf')">PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

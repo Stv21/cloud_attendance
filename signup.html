@@ -1,0 +1,120 @@
+\public\signup.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Smart Attendance</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1><i class="fas fa-fingerprint"></i> Smart Attendance</h1>
+            <div id="signup-container">
+                <h2>Create Account</h2>
+                <p id="error-message" class="error-text"></p>
+                
+                <form id="signup-form">
+                    <!-- Hidden role input that will always be set -->
+                    <input type="hidden" id="actual-role" value="student">
+                    
+                    <div class="form-group">
+                        <input type="text" id="name" placeholder="Full Name" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" id="email" placeholder="Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="password" placeholder="Password" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <input type="text" id="special-code" placeholder="Special Code (if applicable)">
+                    </div>
+                    
+                    <!-- Role selector (hidden by default) -->
+                    <div id="role-selector" class="form-group" style="display: none;">
+                        <label for="role">Select Role:</label>
+                        <select id="role" class="form-control">
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
+                            <option value="admin">Administrator</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Student-specific fields -->
+                    <div id="student-fields">
+                        <div class="form-group">
+                            <input type="text" id="student-id" placeholder="Student ID (optional)">
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="class-name" placeholder="Class/Section (optional)">
+                        </div>
+                    </div>
+                    
+                    <!-- Teacher-specific fields -->
+                    <div id="teacher-fields" style="display: none;">
+                        <div class="form-group">
+                            <input type="text" id="department" placeholder="Department (optional)">
+                        </div>
+                    </div>
+                    
+                    <button type="button" onclick="createAccount()" class="btn-primary">Create Account</button>
+                </form>
+                
+                <p class="text-center mt-3">
+                    <a href="index.html">Already have an account? Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast-container" class="toast-container"></div>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <!-- App Scripts - CORRECT ORDER IS IMPORTANT -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/shared.js"></script>
+    <script src="js/auth.js"></script>
+    
+    <script>
+        // Special code handling
+        document.getElementById('special-code').addEventListener('input', function() {
+            const specialCode = this.value;
+            const roleSelector = document.getElementById('role-selector');
+            const actualRole = document.getElementById('actual-role');
+            
+            if (specialCode === 'ubuntu') {
+                // Show role selector if correct code is entered
+                roleSelector.style.display = 'block';
+                
+                // Set actual role based on role selector
+                document.getElementById('role').addEventListener('change', function() {
+                    actualRole.value = this.value;
+                    updateFieldVisibility(this.value);
+                });
+            } else {
+                // Hide role selector and default to student
+                roleSelector.style.display = 'none';
+                actualRole.value = 'student';
+                updateFieldVisibility('student');
+            }
+        });
+        
+        // Update field visibility based on role
+        function updateFieldVisibility(role) {
+            document.getElementById('student-fields').style.display = 
+                role === 'student' ? 'block' : 'none';
+            document.getElementById('teacher-fields').style.display = 
+                role === 'teacher' ? 'block' : 'none';
+        }
+    </script>
+</body>
+</html>

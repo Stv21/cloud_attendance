@@ -1,0 +1,82 @@
+\attendance-system\public\index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Attendance System</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1><i class="fas fa-fingerprint"></i> Smart Attendance</h1>
+            <div id="auth-forms">
+                <!-- Login/Register forms will be injected here -->
+                <div class="form-container">
+                    <h2>Login</h2>
+                    <p id="error-message" class="error-text"></p>
+                    <div class="form-group">
+                        <input type="email" id="email" placeholder="Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="password" placeholder="Password" required>
+                    </div>
+                    <button id="login-button" class="btn-primary">Login</button>
+                    <hr>
+                    <button id="google-button" class="btn-google">
+                        <i class="fab fa-google"></i> Sign in with Google
+                    </button>
+                    <p class="text-center">
+                        <a href="signup.html">Don't have an account? Register</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <!-- App Scripts - CORRECT ORDER IS IMPORTANT -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    
+    <script>
+        // Wait until everything is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM loaded, checking if functions are available");
+            
+            // Debug check - print to console if functions exist
+            console.log("loginWithCredentials exists:", typeof loginWithCredentials === 'function');
+            console.log("loginWithGoogle exists:", typeof loginWithGoogle === 'function');
+            
+            // Add event handlers to buttons
+            document.getElementById('login-button').addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log("Login button clicked");
+                if (typeof loginWithCredentials === 'function') {
+                    loginWithCredentials();
+                } else {
+                    console.error("loginWithCredentials function not found!");
+                    document.getElementById('error-message').textContent = 'System error: Login function not available';
+                }
+            });
+            
+            document.getElementById('google-button').addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log("Google login button clicked");
+                if (typeof loginWithGoogle === 'function') {
+                    loginWithGoogle();
+                } else {
+                    console.error("loginWithGoogle function not found!");
+                    document.getElementById('error-message').textContent = 'System error: Google login function not available';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

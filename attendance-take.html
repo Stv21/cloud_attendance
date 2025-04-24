@@ -1,0 +1,95 @@
+-take.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Take Attendance - Attendance System</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="js/auth.js" defer></script>
+    <script src="js/attendance-take.js" defer></script>
+</head>
+<body>
+    <div class="nav-container">
+        <div class="nav-menu">
+            <a href="teacher.html" class="nav-brand">Smart Attendance</a>
+            <div class="nav-links">
+                <a href="teacher.html" class="nav-link">Dashboard</a>
+                <button onclick="firebase.auth().signOut().then(() => window.location.href = 'index.html')" class="logout-btn">Logout</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="app" class="teacher-dashboard">
+        <h1>Take Attendance</h1>
+        <h2 id="class-name">Loading class information...</h2>
+        
+        <div id="dashboard">
+            <div class="card fade-in">
+                <div class="card-header">Class Information</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Class Code:</label>
+                        <div id="class-code" style="font-size: 1.5rem; font-weight: 500;">Generating code...</div>
+                        <p style="font-size: 0.9rem; color: #666;">Share this code with your students to mark attendance</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="session-duration">Session Duration:</label>
+                        <select id="session-duration" class="form-control">
+                            <option value="15">15 minutes</option>
+                            <option value="30" selected>30 minutes</option>
+                            <option value="60">1 hour</option>
+                            <option value="120">2 hours</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Class Location:</label>
+                        <div id="location-status">Getting your location...</div>
+                    </div>
+                    
+                    <button id="start-session-btn" class="btn btn-success">Start Attendance Session</button>
+                    <button id="end-session-btn" class="btn btn-danger" style="display:none;">End Attendance Session</button>
+                </div>
+            </div>
+            
+            <div class="card fade-in">
+                <div class="card-header">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Live Attendance</span>
+                        <span id="session-timer" style="color: #4285F4;">Session not started</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table id="student-list-table">
+                        <thead>
+                            <tr>
+                                <th>Roll No</th>
+                                <th>Student Name</th>
+                                <th>Status</th>
+                                <th>Time</th>
+                                <th>Distance</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-list">
+                            <tr>
+                                <td colspan="5">Start a session to see student attendance</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

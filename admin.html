@@ -1,0 +1,178 @@
+<!-- admin dashboard -->
+-system\public\admin.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Smart Attendance System</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="nav-container">
+        <div class="nav-menu">
+            <a href="admin.html" class="nav-brand">Admin Dashboard</a>
+            <div class="nav-links">
+                <a href="#teachers" class="nav-link">Manage Teachers</a>
+                <a href="#students" class="nav-link">Manage Students</a>
+                <a href="#reports" class="nav-link">Reports</a>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app" class="admin-dashboard fade-in">
+        <h1>Admin Dashboard</h1>
+        
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-title">Total Teachers</div>
+                <div class="stat-number" id="teacher-count">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Total Students</div>
+                <div class="stat-number" id="student-count">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Total Attendance Today</div>
+                <div class="stat-number" id="attendance-count">0</div>
+            </div>
+        </div>
+        
+        <div id="dashboard">
+            <!-- Teacher Management Section -->
+            <div id="teachers" class="card">
+                <div class="card-header">Manage Teachers</div>
+                
+                <form id="add-teacher-form">
+                    <div class="form-group">
+                        <label for="teacher-name">Teacher Name</label>
+                        <input type="text" id="teacher-name" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="teacher-email">Email</label>
+                        <input type="email" id="teacher-email" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="teacher-department">Department</label>
+                        <select id="teacher-department" class="form-control" required>
+                            <option value="">Select Department</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Information Technology">Information Technology</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Mechanical">Mechanical</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Add Teacher</button>
+                </form>
+                
+                <div class="teacher-list-container">
+                    <h3>Current Teachers</h3>
+                    <table id="teacher-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Department</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teacher-list"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Student Management Section -->
+            <div id="students" class="card">
+                <div class="card-header">Manage Students</div>
+                
+                <form id="add-student-form">
+                    <div class="form-group">
+                        <label for="student-name">Student Name</label>
+                        <input type="text" id="student-name" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="student-email">Email</label>
+                        <input type="email" id="student-email" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="student-roll">Roll Number</label>
+                        <input type="text" id="student-roll" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="student-class">Class</label>
+                        <select id="student-class" class="form-control" required>
+                            <option value="">Select Class</option>
+                            <option value="FY">First Year</option>
+                            <option value="SY">Second Year</option>
+                            <option value="TY">Third Year</option>
+                            <option value="Final">Final Year</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Add Student</button>
+                </form>
+                
+                <div class="student-list-container">
+                    <h3>Current Students</h3>
+                    <table id="student-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Roll No</th>
+                                <th>Class</th>
+                                <th>Email</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-list"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Reports Section -->
+            <div id="reports" class="card">
+                <div class="card-header">Attendance Reports</div>
+                
+                <div class="form-group">
+                    <label for="report-class">Select Class</label>
+                    <select id="report-class" class="form-control">
+                        <option value="">All Classes</option>
+                        <option value="FY">First Year</option>
+                        <option value="SY">Second Year</option>
+                        <option value="TY">Third Year</option>
+                        <option value="Final">Final Year</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="report-date">Select Date</label>
+                    <input type="date" id="report-date" class="form-control">
+                </div>
+                
+                <button class="btn btn-primary" onclick="generateReport()">Generate Report</button>
+                
+                <div id="report-container" class="chart-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+   <!-- Replace Firebase 9 with Firebase 8: -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

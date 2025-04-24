@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance History - Smart Attendance</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Charts.js for attendance charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="js/firebase-config.js" defer></script>
+    <script src="js/auth.js" defer></script>
+    <script src="js/attendance-history.js" defer></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <div class="nav-container">
+        <div class="nav-menu">
+            <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a href="dashboard.html" class="nav-brand">
+                <i class="fas fa-calendar-check"></i> Smart Attendance
+            </a>
+            <div class="nav-links">
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="attendance-history.html" class="nav-link active">My Attendance</a>
+                <a href="profile.html" class="nav-link">Profile</a>
+                <button onclick="logout()" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main app content -->
+    <div id="app" class="student-dashboard">
+        <div class="dashboard-container">
+            <!-- Sidebar - for larger screens -->
+            <div class="sidebar">
+                <div class="user-profile">
+                    <div class="user-avatar">
+                        <img src="https://ui-avatars.com/api/?name=S+U&background=random" alt="User Avatar" id="user-avatar">
+                    </div>
+                    <div class="user-info">
+                        <h4 id="user-name">Student Name</h4>
+                        <p id="user-email">student@example.com</p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <ul class="sidebar-menu">
+                    <li class="sidebar-item">
+                        <a href="dashboard.html" class="sidebar-link">
+                            <i class="fas fa-home"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="attendance-history.html" class="sidebar-link active">
+                            <i class="fas fa-history"></i> Attendance History
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="profile.html" class="sidebar-link">
+                            <i class="fas fa-user"></i> My Profile
+                        </a>
+                    </li>
+                    <li class="sidebar-item">
+                        <a href="javascript:void(0)" onclick="logout()" class="sidebar-link">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Main content area -->
+            <div class="main-content">
+                <h1>My Attendance History</h1>
+                
+                <!-- Attendance Status Overview -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-pie"></i> Attendance Summary</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- New Visual Indicator: Attendance Status Overview -->
+                        <div class="attendance-status-overview">
+                            <div class="status-tile">
+                                <div class="status-circle present" id="present-circle" data-percentage="78"></div>
+                                <div class="status-label">Present</div>
+                                <div class="status-count" id="present-percent">78%</div>
+                            </div>
+                            <div class="status-tile">
+                                <div class="status-circle absent" id="absent-circle" data-percentage="15"></div>
+                                <div class="status-label">Absent</div>
+                                <div class="status-count" id="absent-percent">15%</div>
+                            </div>
+                            <div class="status-tile">
+                                <div class="status-circle late" id="late-circle" data-percentage="7"></div>
+                                <div class="status-label">Late</div>
+                                <div class="status-count" id="late-percent">7%</div>
+                            </div>
+                        </div>
+                        
+                        <div class="attendance-stats-detail">
+                            <div class="stat-item">
+                                <div class="stat-label">Total Classes</div>
+                                <div class="stat-value" id="total-classes">32</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Classes Attended</div>
+                                <div class="stat-value" id="classes-attended">25</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Absences</div>
+                                <div class="stat-value" id="classes-absent">5</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Current Streak</div>
+                                <div class="stat-value" id="current-streak">4 days</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Attendance Charts -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-line"></i> Attendance Trends</h3>
+                        <select id="trend-timeframe" class="form-control form-control-sm">
+                            <option value="week">Past Week</option>
+                            <option value="month" selected>Past Month</option>
+                            <option value="semester">This Semester</option>
+                        </select>
+                    </div>
+                    <div class="card-body">
+                        <div class="charts-grid compact-charts">
+                            <div class="chart-wrapper">
+                                <h4>Daily Attendance</h4>
+                                <canvas id="daily-attendance-chart" height="120"></canvas>
+                            </div>
+                            
+                            <div class="chart-wrapper">
+                                <h4>Attendance by Subject</h4>
+                                <canvas id="subject-attendance-chart" height="120"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- New Visual Indicator: Attendance Heatmap -->
+                        <div class="chart-wrapper mt-4">
+                            <h4>Attendance Heatmap</h4>
+                            <div class="attendance-heatmap" id="attendance-heatmap">
+                                <!-- Will be filled dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Attendance Records Table -->
+                <div class="card fade-in">
+                    <div class="card-header">
+                        <h3><i class="fas fa-list"></i> Detailed Records</h3>
+                        <div class="filter-controls">
+                            <select id="subject-filter" class="form-control form-control-sm">
+                                <option value="">All Subjects</option>
+                                <!-- Will be populated dynamically -->
+                            </select>
+                            <input type="month" id="month-filter" class="form-control form-control-sm">
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Subject</th>
+                                        <th>Status</th>
+                                        <th>Time</th>
+                                        <th>Streak</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attendance-records">
+                                    <!-- Records will be populated dynamically -->
+                                    <tr>
+                                        <td>2023-04-23</td>
+                                        <td>Computer Science</td>
+                                        <td><span class="status-badge status-present"><i class="fas fa-check-circle"></i> Present</span></td>
+                                        <td>09:15 AM</td>
+                                        <td>
+                                            <!-- New Visual Indicator: Student Streak -->
+                                            <div class="student-streak">
+                                                <div class="streak-days">
+                                                    <span class="day present"></span>
+                                                    <span class="day present"></span>
+                                                    <span class="day absent"></span>
+                                                    <span class="day present"></span>
+                                                    <span class="day present"></span>
+                                                </div>
+                                                <span class="streak-count">4-day streak</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Also create the supporting JS file -->
+    <script>
+        // This script is just a placeholder - you'll need to create the full version in a separate JS file
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize UI
+            document.getElementById('mobile-menu-toggle').addEventListener('click', function() {
+                document.querySelector('.sidebar').classList.toggle('active');
+            });
+            
+            // We'll implement the charts and data loading in the separate JS file
+            console.log('Page loaded. Will initialize charts when user data is available.');
+        });
+    </script>
+</body>
+</html>
