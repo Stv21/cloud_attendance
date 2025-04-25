@@ -88,101 +88,129 @@ function showFallbackNotification(title, message, type) {
 
 // Join a classroom using code
 function joinClassroom() {
-    if (!currentUser) {
-        showToast('Error', 'You must be logged in to join a classroom', 'error');
-        return;
-    }
-    
     const joinCodeInput = document.getElementById('join-code');
     const joinCode = joinCodeInput.value.trim();
-    
+
     if (!joinCode) {
-        showToast('Error', 'Please enter a classroom code', 'error');
+        alert("Please enter a valid classroom code.");
         return;
     }
-    
-   
-    
+
     // Find the classroom by join code
-    db.collection('classrooms')
+    firebase.firestore().collection('classrooms')
         .where('joinCode', '==', joinCode)
         .get()
         .then(snapshot => {
             if (snapshot.empty) {
-                showToast('Error', 'Invalid classroom code. Please check and try again.', 'error');
+                alert("No classroom found with the given code.");
                 return;
             }
-            
-            let promises = [];
-            let classroomName = "the classroom"; // Default name
-
             snapshot.forEach(doc => {
-                const classroomData = doc.data();
-                classroomName = classroomData.name || "the classroom";
-                
-                promises.push(
-                    db.collection('classrooms')
-                        .doc(classroomData.classroomId)
-                        .get()
-                        .then(classroomDoc => {
-                            if (classroomDoc.exists) {
-                                const classroom = classroomDoc.data();
-                                const classroomId = classroomDoc.id;
-                                
-                                const classroomCard = document.createElement('div');
-                                classroomCard.className = 'classroom-card mb-3';
-                                // UPDATED TEMPLATE WITH MARK ATTENDANCE BUTTON
-                                classroomCard.innerHTML = `
-                                    <div class="card">
-                                        <div class="card-header">
-                                            <h4>${classroom.name || 'Unknown Class'}</h4>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="subject-code">
-                                                <span class="code-label"><strong>Code:</strong> ${classroom.joinCode || 'N/A'}</span>
-                                                <button class="btn-mark-attendance" onclick="markAttendance('${classroomId}', '${classroom.joinCode || ''}')">
-                                                    <i class="fas fa-check-circle"></i> Mark Attendance
-                                                </button>
-                                            </div>
-                                            <p><strong>Subject:</strong> ${classroom.subject || 'Not specified'}</p>
-                                            <p><strong>Teacher:</strong> ${classroom.teacherName || 'Unknown'}</p>
-                                            <div class="card-actions">
-                                                <button class="btn btn-sm btn-primary" onclick="viewClassroomDetails('${classroomId}')">View Details</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                                classroomsList.appendChild(classroomCard);
-                            }
-                        })
-                        .catch(error => {
-                            console.error("Error checking membership:", error);
-                            showToast('Error', 'Failed to join classroom. Please try again.', 'error');
-                        })
-                );
-            });
-            Promise.all(promises)
+                const classroom = doc.data();
+                const classroomId = doc.id;
+                // Add membership record for the student
+                firebase.firestore().collection('classroomMembers').add({
+                    classroomId: classroomId,
+                    studentId: currentUser.uid,
+                    joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+                })
                 .then(() => {
-                    showToast('Success', `You have joined "${classroomName}"`, 'success');
+                    alert("Joined classroom: " + (classroom.name || 'Unnamed Class'));
                     joinCodeInput.value = '';
-                    loadMyClassrooms();
+                    loadMyClassrooms(); // Refresh the classroom list
                 })
                 .catch(error => {
-                    console.error("Error joining classroom:", error);
-                    showToast('Error', 'Failed to join classroom. Please try again.', 'error');
+                    console.error("Error adding membership record:", error);
+                    if (error.message.toLowerCase().includes("network")) {
+                        if (confirm("Network error occurred while joining classroom. Would you like to remove any partial join (if exists) from your list?")) {
+                            // Call removeClassroom if a faulty membership record exists.
+                            // In a real-world scenario, you may want to search for an existing membership record by joinCode.
+                            // For example, you could prompt the user to select the classroom to remove.
+                            removeClassroomByCode(joinCode);
+                        }
+                    } else {
+                        alert("Error joining classroom. Please try again later.");
+                    }
                 });
+            });
         })
         .catch(error => {
             console.error("Error finding classroom:", error);
-            showToast('Error', 'Failed to find classroom. Please try again.', 'error');
+            alert("Error joining classroom. Please try again later.");
         });
+}
+
+// New function to remove classroom membership by join code (if partial join exists)
+function removeClassroomByCode(joinCode) {
+    // Query membership records by the joinCode.
+    // This assumes your 'classrooms' collection stores a unique joinCode.
+    firebase.firestore().collection('classrooms')
+        .where('joinCode', '==', joinCode)
+        .get()
+        .then(snapshot => {
+            if (snapshot.empty) {
+                alert("No classroom membership to remove.");
+                return;
+            }
+            snapshot.forEach(classDoc => {
+                const classroomId = classDoc.id;
+                // Find the membership record for this classroom and current user
+                firebase.firestore().collection('classroomMembers')
+                    .where('classroomId', '==', classroomId)
+                    .where('studentId', '==', currentUser.uid)
+                    .get()
+                    .then(memSnap => {
+                        if (memSnap.empty) {
+                            alert("No membership record found to remove.");
+                        } else {
+                            memSnap.forEach(memDoc => {
+                                firebase.firestore().collection('classroomMembers').doc(memDoc.id).delete()
+                                    .then(() => {
+                                        alert("Membership removed successfully.");
+                                        loadMyClassrooms();
+                                    })
+                                    .catch(err => {
+                                        console.error("Error removing membership:", err);
+                                        alert("Error removing classroom membership: " + err.message);
+                                    });
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Error querying membership records:", err);
+                    });
+            });
+        })
+        .catch(error => {
+            console.error("Error finding classroom by code:", error);
+        });
+}
+
+// Alternatively, you might expose a "Leave Class" button on each classroom card.
+// For that, use this function with the membership document id.
+function removeClassroom(membershipId) {
+    if (confirm("Are you sure you want to leave this classroom?")) {
+        firebase.firestore().collection('classroomMembers').doc(membershipId).delete()
+            .then(() => {
+                alert("You have left the classroom.");
+                loadMyClassrooms();
+            })
+            .catch(error => {
+                alert("Error leaving classroom: " + error.message);
+            });
+    }
 }
 
 // Load my classrooms (joined classes)
 function loadMyClassrooms() {
     if (!currentUser) return;
     
-    const classroomsList = document.getElementById('my-classrooms-list');
+    // Change 'my-classrooms-list' to 'classrooms-list' to match the HTML element's id
+    const classroomsList = document.getElementById('classrooms-list');
+    if (!classroomsList) {
+        console.error("Element 'classrooms-list' not found in DOM");
+        return;
+    }
     classroomsList.innerHTML = '<p>Loading your classrooms...</p>';
     
     db.collection('classroomMembers')
@@ -288,131 +316,58 @@ function loadAttendanceStats() {
 
 // Mark attendance for a specific classroom
 function markAttendance(classroomId, classCode) {
-    // Ensure user is authenticated
     if (!ensureAuthenticated()) return;
     
-    // Show loading state
-    showToast('Checking', 'Looking for active attendance session...', 'info');
+    showToast('Processing', 'Marking your attendance...', 'info');
     
-    // Check for active sessions in this classroom
+    // Check for an active attendance session in the classroom
     db.collection('attendanceSessions')
-        .where('classroomId', '==', classroomId)
-        .where('active', '==', true)
-        .get()
-        .then(snapshot => {
-            if (snapshot.empty) {
-                showToast('No Active Session', 'There is no active attendance session for this class at the moment. Please try again later.', 'warning');
-                return;
-            }
-            
-            // Get the active session
-            const sessionDoc = snapshot.docs[0];
-            const sessionId = sessionDoc.id;
-            const sessionData = sessionDoc.data();
-            console.log("Session data:", sessionData); // Debug session data
-            
-            // Check if student already marked attendance for this session
-            db.collection('attendance')
-                .where('sessionId', '==', sessionId)
-                .where('studentId', '==', currentUser.uid)
-                .get()
-                .then(attSnapshot => {
-                    if (!attSnapshot.empty) {
-                        showToast('Already Marked', 'You have already marked your attendance for this session', 'info');
-                        return;
-                    }
-                    
-                    // Check location permission
-                    checkLocationPermission().then(hasPermission => {
-                        if (!hasPermission) {
-                            markAttendanceWithoutLocation(sessionId, sessionData);
-                            return;
-                        }
-                        
-                        // Request with high accuracy
-                        showToast('Getting Location', 'Please allow location access when prompted...', 'info');
-                        navigator.geolocation.getCurrentPosition(
-                            position => {
-                                const studentLat = position.coords.latitude;
-                                const studentLng = position.coords.longitude;
-                                
-                                // Check if session has location data
-                                if (!sessionData.location) {
-                                    console.warn("Session has no location data, marking without location verification");
-                                    db.collection('attendance').add({
-                                        sessionId: sessionId,
-                                        studentId: currentUser.uid,
-                                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                                        status: 'present',
-                                        deviceInfo: navigator.userAgent,
-                                        noLocationVerification: true
-                                    })
-                                    .then(() => {
-                                        showToast('Success', 'Attendance marked successfully', 'success');
-                                        loadAttendanceStats();
-                                    })
-                                    .catch(error => {
-                                        showToast('Error', 'Failed to mark attendance: ' + error.message, 'error');
-                                    });
-                                    return;
-                                }
-                                
-                                // Safely access location data with fallbacks
-                                const teacherLat = sessionData.location.latitude;
-                                const teacherLng = sessionData.location.longitude;
-                                
-                                // Calculate distance using Haversine formula
-                                const distance = calculateDistance(
-                                    studentLat, studentLng, 
-                                    teacherLat, teacherLng
-                                );
-                                
-                                // Check if student is within allowed radius
-                                const maxDistanceAllowed = sessionData.radius || 100; // Default to 100m
-                                
-                                // Record the attendance
-                                db.collection('attendance').add({
-                                    sessionId: sessionId,
-                                    studentId: currentUser.uid,
-                                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                                    location: new firebase.firestore.GeoPoint(studentLat, studentLng),
-                                    distance: distance,
-                                    status: distance <= maxDistanceAllowed ? 'present' : 'absent',
-                                    deviceInfo: navigator.userAgent
-                                })
-                                .then(() => {
-                                    if (distance <= maxDistanceAllowed) {
-                                        showToast('Success', 'Your attendance has been marked as present!', 'success');
-                                    } else {
-                                        showToast('Warning', `You are ${Math.round(distance)}m away from class location. Marked as absent.`, 'warning');
-                                    }
-                                    
-                                    // Refresh the stats
-                                    loadAttendanceStats();
-                                })
-                                .catch(error => {
-                                    showToast('Error', 'Failed to mark attendance: ' + error.message, 'error');
-                                });
-                            },
-                            error => {
-                                console.error("Geolocation error:", error);
-                                markAttendanceWithoutLocation(sessionId, sessionData);
-                            },
-                            {
-                                enableHighAccuracy: true,
-                                timeout: 10000,
-                                maximumAge: 0
-                            }
-                        );
-                    });
+      .where('classroomId', '==', classroomId)
+      .where('active', '==', true)
+      .get()
+      .then(snapshot => {
+         if (snapshot.empty) {
+             showToast('No Active Session', 'There is no active session at the moment.', 'warning');
+             return;
+         }
+         // Get the first active session
+         const sessionDoc = snapshot.docs[0];
+         const sessionId = sessionDoc.id;
+         
+         // First check if the student already marked attendance in this session
+         db.collection('attendance')
+            .where('sessionId', '==', sessionId)
+            .where('studentId', '==', currentUser.uid)
+            .get()
+            .then(existingSnap => {
+                if (!existingSnap.empty) {
+                   showToast('Already Marked', 'You have already marked attendance for this session.', 'info');
+                   return;
+                }
+                // For demo purposes, mark attendance immediately without using location
+                db.collection('attendance').add({
+                    sessionId: sessionId,
+                    studentId: currentUser.uid,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    status: 'present',
+                    deviceInfo: navigator.userAgent,
+                    demoMode: true
+                })
+                .then(() => {
+                    showToast('Success', 'Your attendance has been marked!', 'success');
+                    loadAttendanceStats();
                 })
                 .catch(error => {
-                    showToast('Error', 'Failed to check active sessions: ' + error.message, 'error');
+                    showToast('Error', 'Failed to mark attendance: ' + error.message, 'error');
                 });
-        })
-        .catch(error => {
-            showToast('Error', 'Failed to check active sessions: ' + error.message, 'error');
-        });
+            })
+            .catch(error => {
+                showToast('Error', 'Failed to check attendance records: ' + error.message, 'error');
+            });
+      })
+      .catch(error => {
+         showToast('Error', 'Failed to check sessions: ' + error.message, 'error');
+      });
 }
 
 // New helper function to mark attendance without location

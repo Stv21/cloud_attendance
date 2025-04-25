@@ -224,7 +224,7 @@ function addClassroomToUI(classroom) {
                 </div>
                 <div class="classroom-actions mt-3">
                     <button class="btn btn-sm btn-primary" onclick="viewClassroom('${classroom.id}')">View Details</button>
-                    <button class="btn btn-sm btn-success" onclick="startClassAttendance('${classroom.id}')">Take Attendance</button>
+                    <button class="btn btn-sm btn-success" onclick="toggleAttendanceSession('${classroom.id}', this)">Take Attendance</button>
                     <button class="btn btn-sm btn-secondary" onclick="copyJoinCode('${classroom.joinCode || ''}')">Copy Code</button>
                 </div>
             </div>
@@ -293,7 +293,7 @@ function loadClassrooms() {
                                 </div>
                                 <div class="classroom-actions mt-3">
                                     <button class="btn btn-sm btn-primary" onclick="viewClassroom('${classroom.id}')">View Details</button>
-                                    <button class="btn btn-sm btn-success" onclick="startClassAttendance('${classroom.id}')">Take Attendance</button>
+                                    <button class="btn btn-sm btn-success" onclick="toggleAttendanceSession('${classroom.id}', this)">Take Attendance</button>
                                     <button class="btn btn-sm btn-secondary" onclick="copyJoinCode('${classroom.joinCode || ''}')">Copy Code</button>
                                 </div>
                             </div>
@@ -352,20 +352,18 @@ function promptForLocation() {
     });
 }
 
-// Start attendance for a classroom with location prompt
+// Replace the startClassAttendance function with this simplified version
 function startClassAttendance(classroomId) {
-    // Show loading state
-    const btn = event.target;
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+    return new Promise((resolve, reject) => {
+        // Show loading state
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
     
-    // First request location automatically
-    promptForLocation().then(location => {
-        // Location access granted
-        const { latitude, longitude } = location.coords;
-        teacherLocation = { latitude, longitude };
-        
+        // Show popup about location request (demo purposes only)
+        showToast('Location Request', 'We\'ll ask for your location for demo purposes.', 'info');
+    
         // Get classroom details
         db.collection('classrooms').doc(classroomId).get()
             .then(doc => {
@@ -373,12 +371,19 @@ function startClassAttendance(classroomId) {
                     showToast('Error', 'Classroom not found', 'error');
                     btn.disabled = false;
                     btn.innerHTML = originalText;
-                    return;
+                    return reject("Classroom not found");
                 }
-                
                 const classroom = doc.data();
-                
-                // Create attendance session
+    
+                // Request location (for demo only; ignore result)
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        position => { console.log("Location granted:", position.coords); },
+                        error => { console.log("Location error (demo continue):", error.message); }
+                    );
+                }
+    
+                // Create new attendance session (demo mode)
                 db.collection('attendanceSessions').add({
                     classroomId: classroomId,
                     classroomName: classroom.name,
@@ -386,34 +391,35 @@ function startClassAttendance(classroomId) {
                     teacherName: firebase.auth().currentUser.displayName || 'Teacher',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     active: true,
-                    location: new firebase.firestore.GeoPoint(
-                        latitude, 
-                        longitude
-                    ),
-                    radius: 100, // meters
+                    demoMode: true,
+                    // Use a placeholder location since we're not verifying
+                    location: new firebase.firestore.GeoPoint(0, 0),
+                    radius: 999999, // virtually any location qualifies
                     code: Math.floor(100000 + Math.random() * 900000).toString() // 6-digit code
                 })
                 .then(sessionRef => {
-                    // Show current classroom indicator
+                    // Update UI: show active session indicator and change button text
                     document.getElementById('current-classroom-indicator').style.display = 'block';
                     document.getElementById('active-classroom-name').textContent = classroom.name;
                     
-                    // Update button
                     btn.disabled = false;
-                    btn.innerHTML = 'Session Active';
-                    btn.className = 'btn btn-sm btn-warning';
+                    btn.innerHTML = 'Stop Session';
+                    btn.className = 'btn btn-sm btn-danger';
+    
+                    showToast('Session Started', `Attendance session started for ${classroom.name}`, 'success');
                     
-                    // Show success toast
-                    showToast('Success', `Attendance session started for ${classroom.name}`, 'success');
-                    
-                    // Redirect to attendance view page
-                    window.location.href = `attendance-view.html?session=${sessionRef.id}&classroom=${classroomId}`;
+                    // Start 15-minute timer
+                    startSessionTimer(sessionRef.id, 15 * 60);
+    
+                    // Return new session id for toggling later
+                    resolve(sessionRef.id);
                 })
                 .catch(error => {
-                    console.error("Error starting attendance session:", error);
+                    console.error("Error starting session:", error);
                     showToast('Error', 'Failed to start attendance session', 'error');
                     btn.disabled = false;
                     btn.innerHTML = originalText;
+                    reject(error);
                 });
             })
             .catch(error => {
@@ -421,14 +427,52 @@ function startClassAttendance(classroomId) {
                 showToast('Error', 'Failed to get classroom details', 'error');
                 btn.disabled = false;
                 btn.innerHTML = originalText;
+                reject(error);
             });
-    }).catch(error => {
-        // Location access denied or error
-        console.error("Location error:", error);
-        showToast('Error', 'Location access is required to start attendance', 'error');
-        btn.disabled = false;
-        btn.innerHTML = originalText;
     });
+}
+
+// Function to start a session timer for a given duration (in seconds)
+function startSessionTimer(sessionId, duration) {
+    const timerElement = document.getElementById('session-timer');
+    if (timerElement) {
+        timerElement.style.display = 'block';
+    }
+    const intervalId = setInterval(() => {
+        if (duration <= 0) {
+            clearInterval(intervalId);
+            if (timerElement) timerElement.textContent = "Session expired";
+            // Optionally, auto-stop the session here
+            return;
+        }
+        const minutes = Math.floor(duration / 60);
+        const seconds = duration % 60;
+        if (timerElement) {
+            timerElement.textContent = `Time remaining: ${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+        }
+        duration--;
+    }, 1000);
+    // Optionally, store intervalId if you want to stop the timer when the session stops.
+}
+
+// Function to stop an attendance session
+function stopClassAttendance(sessionId, btn, originalText) {
+    db.collection('attendanceSessions').doc(sessionId).update({ active: false })
+        .then(() => {
+            showToast('Session Stopped', 'Attendance session has been stopped.', 'success');
+            btn.innerHTML = originalText; // e.g., "Start Session"
+            btn.disabled = false;
+            btn.className = 'btn btn-sm btn-primary';
+            
+            // Optionally, hide the session timer
+            const timerElement = document.getElementById('session-timer');
+            if (timerElement) {
+                timerElement.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            showToast('Error', 'Failed to stop the session: ' + error.message, 'error');
+        });
 }
 
 // Add this function to fix the stats display
@@ -566,3 +610,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// This function toggles between starting a new session and stopping the active session.
+function toggleAttendanceSession(classroomId, btn) {
+    // Check if button already indicates an active session by a data attribute
+    if (btn.dataset.sessionActive === "true") {
+        // Stop the current session.
+        stopClassAttendance(btn.dataset.sessionId, btn, "Take Attendance");
+        // Clear the data attributes so the teacher can start a new session next time.
+        btn.dataset.sessionActive = "false";
+        btn.dataset.sessionId = "";
+    } else {
+        // Start a new session.
+        startClassAttendance(classroomId)
+            .then(newSessionId => {
+                // Change the button to Stop Session
+                btn.dataset.sessionActive = "true";
+                btn.dataset.sessionId = newSessionId; // Store new session id for later stopping
+            })
+            .catch(error => {
+                console.error("Failed to start session:", error);
+            });
+    }
+}

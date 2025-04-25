@@ -1,29 +1,291 @@
-\attendance-system\public\index.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Attendance System</title>
-    <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4285F4;
+            --secondary-color: #34A853;
+            --accent-color: #FBBC05;
+            --danger-color: #EA4335;
+            --text-color: #333;
+            --light-text: #757575;
+            --background-color: #f9fafb;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-image: url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 32, 96, 0.7), rgba(0, 64, 128, 0.7));
+            z-index: 0;
+        }
+        
+        .auth-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        .auth-card {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            padding: 40px;
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .auth-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            font-size: 28px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        h1 i {
+            font-size: 32px;
+            color: var(--accent-color);
+        }
+        
+        h2 {
+            color: var(--text-color);
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            padding-left: 45px;
+            border: 1px solid #e1e1e1;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background-color: #f9f9f9;
+        }
+        
+        .form-group::before {
+            content: "";
+            font-family: "Font Awesome 5 Free";
+            font-weight: 900;
+            position: absolute;
+            left: 15px;
+            top: 15px;
+            color: var(--light-text);
+            font-size: 18px;
+        }
+        
+        .form-group:nth-of-type(1)::before {
+            content: "\f0e0"; /* envelope icon */
+        }
+        
+        .form-group:nth-of-type(2)::before {
+            content: "\f023"; /* lock icon */
+        }
+        
+        .form-group input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.15);
+            outline: none;
+            background-color: #fff;
+        }
+        
+        .btn-primary {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(66, 133, 244, 0.25);
+        }
+        
+        .btn-primary:hover {
+            background-color: #3367d6;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(66, 133, 244, 0.3);
+        }
+        
+        hr {
+            margin: 25px 0;
+            border: 0;
+            border-top: 1px solid #eee;
+            position: relative;
+        }
+        
+        hr:before {
+            content: "OR";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--card-bg);
+            color: var(--light-text);
+            padding: 0 10px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .btn-google {
+            width: 100%;
+            padding: 13px;
+            background-color: white;
+            color: #555;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-google i {
+            color: var(--danger-color);
+            font-size: 20px;
+        }
+        
+        .btn-google:hover {
+            background-color: #f9f9f9;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .text-center {
+            text-align: center;
+            margin-top: 25px;
+            color: var(--light-text);
+        }
+        
+        .text-center a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+        
+        .text-center a:hover {
+            color: #3367d6;
+            text-decoration: underline;
+        }
+        
+        .error-text {
+            color: var(--danger-color);
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 15px;
+            min-height: 20px;
+        }
+        
+        .system-logo {
+            margin: 0 auto;
+            display: block;
+            max-width: 100%; /* Changed from 80px to accommodate the wider logo */
+            height: auto;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 480px) {
+            .auth-card {
+                padding: 25px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            h2 {
+                font-size: 20px;
+            }
+            
+            .form-group input, .btn-primary, .btn-google {
+                padding: 12px;
+                font-size: 14px;
+            }
+            
+            .auth-container {
+                padding: 15px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="auth-container">
         <div class="auth-card">
+            <img src="https://attendance1.blob.core.windows.net/stv/logo-wide.png" alt="AFF College Smart Attendance" class="system-logo">
             <h1><i class="fas fa-fingerprint"></i> Smart Attendance</h1>
             <div id="auth-forms">
-                <!-- Login/Register forms will be injected here -->
                 <div class="form-container">
-                    <h2>Login</h2>
+                    <h2>Welcome Back</h2>
                     <p id="error-message" class="error-text"></p>
                     <div class="form-group">
-                        <input type="email" id="email" placeholder="Email" required>
+                        <input type="email" id="email" placeholder="Email Address" required>
                     </div>
                     <div class="form-group">
                         <input type="password" id="password" placeholder="Password" required>
                     </div>
-                    <button id="login-button" class="btn-primary">Login</button>
+                    <button id="login-button" class="btn-primary">Sign In</button>
                     <hr>
                     <button id="google-button" class="btn-google">
                         <i class="fab fa-google"></i> Sign in with Google
